@@ -1,5 +1,6 @@
 ticTacToe = {};
 ticTacToe.squares = [];
+ticTacToe.turn = "x";
 
 //Create the renderer
 var renderer = PIXI.autoDetectRenderer(600, 600);
@@ -13,13 +14,11 @@ document.getElementById("canvas").appendChild(renderer.view);
 var stage = new PIXI.Container();
 
 //load the textures we need into the texture cache 
-PIXI.loader.add(["graphics/x.png", "graphics/o.png"]);
-var TextureCache = PIXI.utils.TextureCache;
-var xTexture = TextureCache["graphics/x.png"];
-var oTexture = TextureCache["graphics/o.png"];
+PIXI.loader.add(["x.png", "o.png"]).load(setup);
 
-//this will be a contructor for each square of the grid
+//this is a contructor for each square of the grid
 ticTacToe.Square = function(){
+	var self = this;
 	this.container = new PIXI.Container;
 	this.backGround = new PIXI.Graphics;
 	// this part creates the light blue background
@@ -28,18 +27,68 @@ ticTacToe.Square = function(){
 	this.backGround.drawRect(0,0,width/3, height/3);
 	this.backGround.endFill();
 	this.container.addChild(this.backGround);
+	//sets up the hit area and mouseDown callBack
+	this.backGround.hitArea = this.backGround.getBounds();
+	this.backGround.interactive = true;
+	this.backGround.buttonMode = true;
+	this.backGround.click = function(){
+		if (ticTacToe.turn === "x"){
+			if(self.spriteX.alpha === 0){
+				self.xIn.start();
+			}else{
+				self.xOut.start()
+			}
+		}else{
+			if(self.spriteO.alpha === 0){
+				self.oIn.start();
+			}else{
+				self.oOut.start()
+			}
+		}
+	};
+	
 	stage.addChild(this.container);
-	
 	// this part creates the X and O sprites
-	this.spriteX = new PIXI.Sprite(xTexture);
+	this.spriteX = new PIXI.Sprite(PIXI.utils.TextureCache["x.png"]);
 	this.container.addChild(this.spriteX);
+	this.spriteX.anchor.set(0.5,0.5);
+	this.spriteX.position.set(this.backGround.width / 2,this.backGround.height / 2);
+	this.spriteX.scale.set(1.2);
+	this.spriteX.alpha = 0;
+	//tweens to fade in and out
+	this.xAlpha = {alpha : 0};
+	this.xIn = new TWEEN.Tween(this.xAlpha);
+	this.xIn.to( {alpha : 1} , 1000)
+	this.xIn.onUpdate(function() {
+		self.spriteX.alpha = self.xAlpha.alpha;
+	});
+	this.xIn.onStart(function(){self.backGround.interactive = false;});
+	this.xIn.onComplete(function(){self.backGround.interactive = true;});
 
-	renderer.render(stage);
-
+	this.xOut = new TWEEN.Tween(this.xAlpha);
+	this.xOut.to( {alpha : 0} , 1000)
+	this.xOut.onUpdate(function() {
+		self.spriteX.alpha = self.xAlpha.alpha;
+	});
+	this.xOut.onStart(function(){self.backGround.interactive = false;});
+	this.xOut.onComplete(function(){self.backGround.interactive = true;});
 	
+
+	this.spriteO = new PIXI.Sprite(PIXI.utils.TextureCache["o.png"]);
+	this.container.addChild(this.spriteO);
+	this.spriteO.anchor.set(0.5,0.5);
+	this.spriteO.position.set(this.backGround.width / 2,this.backGround.height / 2);
+	this.spriteO.scale.set(1.2);
+	this.spriteO.alpha = 0;
 }
 
-var firstSquare = new ticTacToe.Square;
+function setup() {
+
+	for(i=0; i < 9; ++i){
+		var square = new ticTacToe.Square;
+		square.container.position.set((i%3) * (width / 3), Math.floor((i/3)) * (height /3));
+		ticTacToe.squares.push(square);
+	}
 
 // this draws the grid
 var lines = new PIXI.Graphics;
@@ -53,4 +102,12 @@ lines.lineTo(width, height /3);
 lines.moveTo(0, (height / 3) *2 );
 lines.lineTo(width, (height / 3) *2 );
 stage.addChild(lines);
-renderer.render(stage);
+gameLoop();
+
+}
+
+function gameLoop(){
+	requestAnimationFrame(gameLoop)
+	TWEEN.update();
+	renderer.render(stage);
+}
