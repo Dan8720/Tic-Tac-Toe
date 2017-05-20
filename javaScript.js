@@ -1,6 +1,6 @@
 ticTacToe = {};
 ticTacToe.squares = [];
-ticTacToe.turn = "x";
+ticTacToe.turn = "o";
 
 //Create the renderer
 var renderer = PIXI.autoDetectRenderer(600, 600);
@@ -58,7 +58,7 @@ ticTacToe.Square = function(){
 	//tweens to fade in and out
 	this.xAlpha = {alpha : 0};
 	this.xIn = new TWEEN.Tween(this.xAlpha);
-	this.xIn.to( {alpha : 1} , 1000)
+	this.xIn.to( {alpha : 1} , 500)
 	this.xIn.onUpdate(function() {
 		self.spriteX.alpha = self.xAlpha.alpha;
 	});
@@ -66,7 +66,7 @@ ticTacToe.Square = function(){
 	this.xIn.onComplete(function(){self.backGround.interactive = true;});
 
 	this.xOut = new TWEEN.Tween(this.xAlpha);
-	this.xOut.to( {alpha : 0} , 1000)
+	this.xOut.to( {alpha : 0} , 500)
 	this.xOut.onUpdate(function() {
 		self.spriteX.alpha = self.xAlpha.alpha;
 	});
@@ -80,28 +80,81 @@ ticTacToe.Square = function(){
 	this.spriteO.position.set(this.backGround.width / 2,this.backGround.height / 2);
 	this.spriteO.scale.set(1.2);
 	this.spriteO.alpha = 0;
+
+	this.oAlpha = {alpha : 0};
+	this.oIn = new TWEEN.Tween(this.oAlpha);
+	this.oIn.to( {alpha : 1} , 500)
+	this.oIn.onUpdate(function() {
+		self.spriteO.alpha = self.oAlpha.alpha;
+	});
+	this.oIn.onStart(function(){self.backGround.interactive = false;});
+	this.oIn.onComplete(function(){self.backGround.interactive = true;});
+
+	this.oOut = new TWEEN.Tween(this.oAlpha);
+	this.oOut.to( {alpha : 0} , 500)
+	this.oOut.onUpdate(function() {
+		self.spriteO.alpha = self.oAlpha.alpha;
+	});
+	this.oOut.onStart(function(){self.backGround.interactive = false;});
+	this.oOut.onComplete(function(){self.backGround.interactive = true;});
 }
 
-function setup() {
+// global functions to manage the board 
 
+ticTacToe.interactive = function(enable){
+	ticTacToe.squares.forEach(function(value){
+		value.backGround.interactive = enable;
+	});
+};
+
+function setup() {
+	// loop that draws all nine squares on the grid
 	for(i=0; i < 9; ++i){
 		var square = new ticTacToe.Square;
 		square.container.position.set((i%3) * (width / 3), Math.floor((i/3)) * (height /3));
 		ticTacToe.squares.push(square);
-	}
+	// this draws the grid
+	var lines = new PIXI.Graphics;
+	lines.lineStyle(4, 0xFFFFFF, 1);
+	lines.moveTo(width/3, 0);
+	lines.lineTo(width/3, height);
+	lines.moveTo((width/3)*2, 0);
+	lines.lineTo((width/3)*2, height);
+	lines.moveTo(0, height / 3);
+	lines.lineTo(width, height /3);
+	lines.moveTo(0, (height / 3) *2 );
+	lines.lineTo(width, (height / 3) *2 );
+	stage.addChild(lines);
+	//this draws the start game box
+	ticTacToe.startGameContainer = new PIXI.Container;
+	ticTacToe.startGameContainer.anchor = 0.5;
+	ticTacToe.startGameContainer.startGameBackGround = new PIXI.Graphics;
 
-// this draws the grid
-var lines = new PIXI.Graphics;
-lines.lineStyle(4, 0xFFFFFF, 1);
-lines.moveTo(width/3, 0);
-lines.lineTo(width/3, height);
-lines.moveTo((width/3)*2, 0);
-lines.lineTo((width/3)*2, height);
-lines.moveTo(0, height / 3);
-lines.lineTo(width, height /3);
-lines.moveTo(0, (height / 3) *2 );
-lines.lineTo(width, (height / 3) *2 );
-stage.addChild(lines);
+	ticTacToe.startGameContainer.startGameBackGround.beginFill(0x001193);
+	ticTacToe.startGameContainer.startGameBackGround.lineStyle(4, 0xFFFFFF, 1);
+	ticTacToe.startGameContainer.startGameBackGround.drawRect(0, height / 4, width, height / 2);
+	ticTacToe.startGameContainer.startGameBackGround.endFill();
+	ticTacToe.startGameContainer.addChild(ticTacToe.startGameContainer.startGameBackGround);
+	stage.addChild(ticTacToe.startGameContainer);
+	// this is the text for our start game panel 
+	ticTacToe.startGameContainer.textOne = new PIXI.Text("Choose Game Type",{fontFamily: "Arial", fontSize: 32, fill: "white"});
+	ticTacToe.startGameContainer.addChild(ticTacToe.startGameContainer.textOne);
+	ticTacToe.startGameContainer.textOne.anchor.set(0.5,0.5);
+	ticTacToe.startGameContainer.textOne.position.set(width/2, height/2.5);
+
+	ticTacToe.startGameContainer.textTwo = new PIXI.Text("Vs Computer",{fontFamily: "Arial", fontSize: 32, fill: "white"});
+	ticTacToe.startGameContainer.addChild(ticTacToe.startGameContainer.textTwo);
+	ticTacToe.startGameContainer.textTwo.anchor.set(0.5,0.5);
+	ticTacToe.startGameContainer.textTwo.position.set(width/3, height/1.75);
+
+	ticTacToe.startGameContainer.textThree = new PIXI.Text("Vs Player",{fontFamily: "Arial", fontSize: 32, fill: "white"});
+	ticTacToe.startGameContainer.addChild(ticTacToe.startGameContainer.textThree);
+	ticTacToe.startGameContainer.textThree.anchor.set(0.5,0.5);
+	ticTacToe.startGameContainer.textThree.position.set((width/3) * 2, height/1.75);
+}
+
+ticTacToe.gameState = "NEW_GAME"
+ticTacToe.interactive(false);
 gameLoop();
 
 }
@@ -110,4 +163,12 @@ function gameLoop(){
 	requestAnimationFrame(gameLoop)
 	TWEEN.update();
 	renderer.render(stage);
+
+	switch(ticTacToe.gameState){
+		case "NEW_GAME":
+		{
+
+		}
+	}
+
 }
