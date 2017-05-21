@@ -19,6 +19,7 @@ PIXI.loader.add(["x.png", "o.png"]).load(setup);
 //this is a contructor for each square of the grid
 ticTacToe.Square = function(){
 	var self = this;
+	this.locked = false;
 	this.container = new PIXI.Container;
 	this.backGround = new PIXI.Graphics;
 	// this part creates the light blue background
@@ -32,11 +33,14 @@ ticTacToe.Square = function(){
 	this.backGround.interactive = true;
 	this.backGround.buttonMode = true;
 	this.backGround.click = function(){
-		if (ticTacToe.turn === "x"){
+		;
+		if (ticTacToe.turn === "X"){
 			if(self.spriteX.alpha === 0){
 				self.xIn.start();
+				ticTacToe.squareSelected(ticTacToe.squares.indexOf(self));
 			}else{
 				self.xOut.start()
+				ticTacToe.squareCancel(ticTacToe.squares.indexOf(self));
 			}
 		}else{
 			if(self.spriteO.alpha === 0){
@@ -99,20 +103,13 @@ ticTacToe.Square = function(){
 	this.oOut.onComplete(function(){self.backGround.interactive = true;});
 }
 
-// global functions to manage the board 
-
-ticTacToe.interactive = function(enable){
-	ticTacToe.squares.forEach(function(value){
-		value.backGround.interactive = enable;
-	});
-};
-
 function setup() {
 	// loop that draws all nine squares on the grid
 	for(i=0; i < 9; ++i){
 		var square = new ticTacToe.Square;
 		square.container.position.set((i%3) * (width / 3), Math.floor((i/3)) * (height /3));
 		ticTacToe.squares.push(square);
+		}
 	// this draws the grid
 	var lines = new PIXI.Graphics;
 	lines.lineStyle(4, 0xFFFFFF, 1);
@@ -146,17 +143,101 @@ function setup() {
 	ticTacToe.startGameContainer.addChild(ticTacToe.startGameContainer.textTwo);
 	ticTacToe.startGameContainer.textTwo.anchor.set(0.5,0.5);
 	ticTacToe.startGameContainer.textTwo.position.set(width/3, height/1.75);
+	ticTacToe.startGameContainer.textTwo.interactive = true;
+	ticTacToe.startGameContainer.textTwo.pointerover = function(){
+		ticTacToe.startGameContainer.textTwo.tint = 0xff0000;
+	};
+	ticTacToe.startGameContainer.textTwo.pointerout = function(){
+		ticTacToe.startGameContainer.textTwo.tint = 0xffffff;
+	};
+	ticTacToe.startGameContainer.textTwo.mousedown = function(){
+		ticTacToe.gameType = "playerVComputer"
+		ticTacToe.onGameTypeSelected();
+	};
 
 	ticTacToe.startGameContainer.textThree = new PIXI.Text("Vs Player",{fontFamily: "Arial", fontSize: 32, fill: "white"});
 	ticTacToe.startGameContainer.addChild(ticTacToe.startGameContainer.textThree);
 	ticTacToe.startGameContainer.textThree.anchor.set(0.5,0.5);
 	ticTacToe.startGameContainer.textThree.position.set((width/3) * 2, height/1.75);
-}
+	ticTacToe.startGameContainer.textThree.interactive = true;
+	ticTacToe.startGameContainer.textThree.pointerover = function(){
+		ticTacToe.startGameContainer.textThree.tint = 0xff0000;
+	};
+	ticTacToe.startGameContainer.textThree.pointerout = function(){
+		ticTacToe.startGameContainer.textThree.tint = 0xffffff;
+	};
+	ticTacToe.startGameContainer.textThree.mousedown = function(){
+		ticTacToe.gameType = "playerVplayer";
+		ticTacToe.onGameTypeSelected();
+	};
 
 ticTacToe.gameState = "NEW_GAME"
 ticTacToe.interactive(false);
 gameLoop();
 
+}
+
+ticTacToe.onGameTypeSelected = function(){
+	ticTacToe.startGameContainer.textOne.setText("Choose your Symbol");
+	ticTacToe.startGameContainer.textTwo.setText("X");
+	ticTacToe.startGameContainer.textThree.setText("O");
+	ticTacToe.startGameContainer.textTwo.mousedown = function(){
+		ticTacToe.playerOneSymbol = "X"
+		ticTacToe.playerTwoSymbol = "O"
+
+		ticTacToe.onGameStart();
+	};
+	ticTacToe.startGameContainer.textThree.mousedown = function(){
+		ticTacToe.playerOneSymbol = "O";
+		ticTacToe.playerTwoSymbol = "X"
+		ticTacToe.onGameStart();
+	};
+}
+
+ticTacToe.onGameStart = function(){
+	ticTacToe.interactive(true);
+	ticTacToe.gameState = "PLAYER_ONE_TURN";
+	$("#P1symbol").text("Symbol : " + ticTacToe.playerOneSymbol);
+	$("#P2symbol").text("Symbol : " + ticTacToe.playerTwoSymbol);
+	ticTacToe.startGameContainer.visible = false;
+};
+
+// global functions to manage the board 
+
+ticTacToe.interactive = function(enable){
+	ticTacToe.squares.forEach(function(value){
+		value.backGround.interactive = enable;
+	});
+};
+
+ticTacToe.squareSelected = function(squareIndex){
+	for (square = 0; square < ticTacToe.squares.length; square ++){
+		if(square != squareIndex){
+			ticTacToe.squares[square].backGround.interactive = false;
+		}
+	}
+	if(ticTacToe.gameState === "WAITING_FOR_PLAYER_ONE"){
+		$("#P1button").html("<button class = 'btn btn-default'> Confirm Move </button>");
+	}else{
+		$("#P2button").html("<button class = 'btn btn-default'> Confirm Move </button>");
+	}
+}
+
+ticTacToe.squareCancel = function(squareIndex){
+	for (square = 0; square < ticTacToe.squares.length; square ++){
+		if(square != squareIndex && ticTacToe.squares[square].locked === false){
+			ticTacToe.squares[square].backGround.interactive = true;
+		}
+	}
+		if(ticTacToe.gameState === "WAITING_FOR_PLAYER_ONE"){
+		$("#P1button").html("");
+	}else{
+		$("#P2button").html("");
+	}
+}
+
+ticTacToe.lockSquare = function(squareIndex){
+	ticTacToe.squares[squareIndex].locked = true;
 }
 
 function gameLoop(){
@@ -165,9 +246,11 @@ function gameLoop(){
 	renderer.render(stage);
 
 	switch(ticTacToe.gameState){
-		case "NEW_GAME":
+		case "PLAYER_ONE_TURN":
 		{
-
+			$("#P1").toggleClass("highlight");
+			ticTacToe.turn = ticTacToe.playerOneSymbol;
+			ticTacToe.gameState = "WAITING_FOR_PLAYER_ONE";
 		}
 	}
 
